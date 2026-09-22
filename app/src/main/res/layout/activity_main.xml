@@ -1,0 +1,231 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/bg_dark"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <!-- Header -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:layout_marginBottom="20dp">
+
+            <TextView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@color/primary"
+                android:gravity="center"
+                android:text="⚡"
+                android:textSize="20sp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="群报数 · 极速打卡"
+                    android:textColor="@color/text_white"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Android 本地独立脱机版"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="@color/border"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="就绪"
+                android:textColor="@color/success"
+                android:textSize="12sp" />
+        </LinearLayout>
+
+        <!-- 配置卡片 -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="活动与身份配置"
+                android:textColor="@color/primary"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="12dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="打卡姓名"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/input_bg"
+                android:textColor="@color/text_white"
+                android:text="李弘浩"
+                android:padding="10dp"
+                android:textSize="14sp"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="活动 ID (FormID)"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etFormId"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/input_bg"
+                android:textColor="@color/text_white"
+                android:text="1851089033294204929"
+                android:padding="10dp"
+                android:textSize="14sp"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="登录凭据 (Authorization Token)"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etToken"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/input_bg"
+                android:textColor="@color/text_white"
+                android:text="kRLkYZxljx0o2Yb1wCFdfZBJopGadDGV_ojfIlRTHqBboW0PUdH-Vas3W7ekGnLEvHGx1A"
+                android:padding="10dp"
+                android:textSize="12sp"
+                android:inputType="textPassword"
+                android:layout_marginBottom="10dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="目标打卡地点 (自动合法范围)"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp" />
+
+            <EditText
+                android:id="@+id/etLocation"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/input_bg"
+                android:textColor="@color/success"
+                android:text="汕头大学新医学楼 (偏差0米，范围合规)"
+                android:padding="10dp"
+                android:textSize="13sp"
+                android:enabled="false" />
+        </LinearLayout>
+
+        <!-- 一键打卡按钮 -->
+        <Button
+            android:id="@+id/btnClockIn"
+            android:layout_width="match_parent"
+            android:layout_height="52dp"
+            android:backgroundTint="@color/primary"
+            android:text="🚀 立即一键打卡"
+            android:textColor="@color/bg_dark"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <!-- 结果卡片 -->
+        <LinearLayout
+            android:id="@+id/cardResult"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/card_bg"
+            android:orientation="vertical"
+            android:padding="16dp"
+            android:visibility="gone"
+            android:layout_marginBottom="16dp">
+
+            <TextView
+                android:id="@+id/tvResultTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="✅ 打卡成功"
+                android:textColor="@color/success"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="6dp" />
+
+            <TextView
+                android:id="@+id/tvResultSeq"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="报数序号：第 1 位"
+                android:textColor="@color/text_white"
+                android:textSize="14sp"
+                android:layout_marginBottom="4dp" />
+
+            <TextView
+                android:id="@+id/tvResultFid"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="记录 FID: -"
+                android:textColor="@color/text_muted"
+                android:textSize="12sp"
+                android:fontFamily="monospace" />
+        </LinearLayout>
+
+        <!-- 实时执行日志 -->
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="执行日志终端"
+            android:textColor="@color/text_muted"
+            android:textSize="12sp"
+            android:layout_marginBottom="6dp" />
+
+        <TextView
+            android:id="@+id/tvLog"
+            android:layout_width="match_parent"
+            android:layout_height="160dp"
+            android:background="#030712"
+            android:fontFamily="monospace"
+            android:padding="12dp"
+            android:text="[就绪] 点击上方按钮发起打卡\n"
+            android:textColor="@color/primary"
+            android:textSize="11sp" />
+
+    </LinearLayout>
+</ScrollView>
