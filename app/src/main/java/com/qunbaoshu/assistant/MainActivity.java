@@ -125,8 +125,13 @@ public class MainActivity extends AppCompatActivity {
 
         executor.execute(() -> {
             try {
-                // 1. 获取并直传纯黑图（有容错保护）
-                log("[1/3] 上传纯黑图片至阿里云 OSS...");
+                // 1. 动态获取表单最新版本 (解决“被发布人修改”报错)
+                log("[1/4] 同步活动最新配置与版本号...");
+                int latestVersion = fetchLatestFormVersion(formId, token);
+                log("[+] 获取到��新表单版本: v" + latestVersion);
+
+                // 2. 获取并直传纯黑图（有容错保护）
+                log("[2/4] 上传纯黑图片至阿里云 OSS...");
                 String imageUrl = null;
                 try {
                     imageUrl = uploadBlackImage(formId, token);
@@ -136,13 +141,13 @@ public class MainActivity extends AppCompatActivity {
                     imageUrl = FALLBACK_IMAGE_URL;
                 }
 
-                // 2. 检查会话状态与历史记录
-                log("[2/3] 查询会���历史与打卡槽位...");
+                // 3. 检查会话状态与历史记录 FID
+                log("[3/4] 查询会话历史与打卡槽位...");
                 String lastFid = fetchLastFid(formId, token);
 
-                // 3. 构造 GeoJSON 与 Catalogs 报文
-                log("[3/3] 组装范围坐标 (偏差 0 米)，提交打卡...");
-                JSONObject submitRes = submitForm(formId, token, name, imageUrl, lastFid);
+                // 4. 构造 GeoJSON 与 Catalogs 报文
+                log("[4/4] 组装范围坐标 (偏差 0 米)，提交打卡...");
+                JSONObject submitRes = submitForm(formId, token, name, imageUrl, lastFid, latestVersion);
 
                 int code = submitRes.optInt("code", -1);
                 if (code == 0) {
@@ -154,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
                     mainHandler.post(() -> {
                         cardResult.setVisibility(View.VISIBLE);
                         tvResultTitle.setText("✅ 打卡成功 (入库完成)");
-                        tvResultSeq.setText("提交成功！");
+                        tvResultSeq.setText("提交成功！已完成签到");
                         tvResultFid.setText("FID: " + fid);
                         Toast.makeText(MainActivity.this, "🎉 打卡成功！", Toast.LENGTH_SHORT).show();
                     });
@@ -178,6 +183,29 @@ public class MainActivity extends AppCompatActivity {
                 });
             }
         });
+    }
+
+    private int fetchLatestFormVersion(String formId, String token) {
+        try {
+            URL url = new URL(BASE_URL + "/v3/form/" + formId);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Authorization", token);
+            conn.setRequestProperty("Client-App-Id", APP_ID);
+            conn.setRequestProperty("Client-Form-Id", formId);
+            conn.setRequestProperty("ver", "3.70.2");
+            conn.setConnectTimeout(6000);
+
+            String jsonStr = readResponse(conn);
+            JSONObject root = new JSONObject(jsonStr);
+            JSONObject data = root.optJSONObject("data");
+            if (data != null && data.has("version")) {
+                return data.getInt("version");
+            }
+        } catch (Exception e) {
+            log("[!] 获取版本异常: " + e.getMessage());
+        }
+        return 5; // 默认最新版本
     }
 
     private String uploadBlackImage(String formId, String token) throws Exception {
@@ -268,7 +296,7 @@ public class MainActivity extends AppCompatActivity {
         return "";
     }
 
-    private JSONObject submitForm(String formId, String token, String name, String imageUrl, String lastFid) throws Exception {
+    private JSONObject submitForm(String formId, String token, String name, String imageUrl, String lastFid, int formVersion) throws Exception {
         boolean isPut = lastFid != null && !lastFid.isEmpty();
         String method = isPut ? "PUT" : "POST";
         String path = isPut ? "/v2/" + formId + "/form_data" : "/v1/" + formId + "/form_data";
@@ -336,7 +364,7 @@ public class MainActivity extends AppCompatActivity {
         showQ.put("1851089034359558148");
         payload.put("showQuestions", showQ);
         payload.put("examUsedTime", JSONObject.NULL);
-        payload.put("formVersion", 4);
+        payload.put("formVersion", formVersion);
 
         URL url = new URL(BASE_URL + path);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
