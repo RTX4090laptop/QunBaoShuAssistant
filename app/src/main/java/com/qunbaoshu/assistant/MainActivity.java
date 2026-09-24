@@ -1,5 +1,7 @@
 package com.qunbaoshu.assistant;
 
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -32,7 +34,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends AppCompatActivity {
 
     private EditText etName, etFormId, etToken;
-    private Button btnClockIn;
+    private Button btnClockIn, btnPasteToken;
     private TextView tvLog, tvStatus, tvResultTitle, tvResultSeq, tvResultFid;
     private LinearLayout cardResult;
 
@@ -48,6 +50,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String SPECIFIED_ADDR = "汕头大学新医学楼";
     private static final String DETAIL_ADDR = "广东省汕头市金平区大学路243号";
 
+    // 最新有效的默认凭据
+    private static final String LATEST_VALID_TOKEN = "KezNfDSR4QtHN3asV1qN7pKxD45KYWmHeO23LldAMfX89yY4ojaCKDKioAAwfyXna3k0nQ";
+
+    // 兜底图片 URL (群报数已有的公开打卡图)
+    private static final String FALLBACK_IMAGE_URL = "https://oss2.qun100.com/F2p65x29/V2/formData2/qk9K2UCBZGVe37f1d39.jpg";
+
     // 纯黑 JPEG 图片 Base64
     private static final String BLACK_JPG_B64 = 
         "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////" +
@@ -62,12 +70,29 @@ public class MainActivity extends AppCompatActivity {
         etFormId = findViewById(R.id.etFormId);
         etToken = findViewById(R.id.etToken);
         btnClockIn = findViewById(R.id.btnClockIn);
+        btnPasteToken = findViewById(R.id.btnPasteToken);
         tvLog = findViewById(R.id.tvLog);
         tvStatus = findViewById(R.id.tvStatus);
         cardResult = findViewById(R.id.cardResult);
         tvResultTitle = findViewById(R.id.tvResultTitle);
         tvResultSeq = findViewById(R.id.tvResultSeq);
         tvResultFid = findViewById(R.id.tvResultFid);
+
+        etToken.setText(LATEST_VALID_TOKEN);
+
+        btnPasteToken.setOnClickListener(v -> {
+            ClipboardManager cm = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+            if (cm != null && cm.hasPrimaryClip() && cm.getPrimaryClip().getItemCount() > 0) {
+                CharSequence text = cm.getPrimaryClip().getItemAt(0).getText();
+                if (text != null && text.length() > 0) {
+                    etToken.setText(text.toString().trim());
+                    Toast.makeText(this, "已粘贴剪贴板 Token", Toast.LENGTH_SHORT).show();
+                    log("已粘贴新 Token: " + text.subSequence(0, Math.min(10, text.length())) + "...");
+                }
+            } else {
+                Toast.makeText(this, "剪贴板为空", Toast.LENGTH_SHORT).show();
+            }
+        });
 
         btnClockIn.setOnClickListener(v -> startClockIn());
     }
@@ -88,46 +113,64 @@ public class MainActivity extends AppCompatActivity {
         String token = etToken.getText().toString().trim();
         String name = etName.getText().toString().trim();
 
+        if (token.isEmpty()) {
+            Toast.makeText(this, "Token 不能为空！", Toast.LENGTH_SHORT).show();
+            btnClockIn.setEnabled(true);
+            btnClockIn.setText("🚀 立即一键打卡");
+            return;
+        }
+
+        log("-----------------------------------------");
         log("开始打卡流程: 填报人 [" + name + "]");
 
         executor.execute(() -> {
             try {
-                // 1. 直传纯黑图片到阿里云 OSS
-                log("[1/3] 获取阿里云 OSS 预签名并直传纯黑图...");
-                String imageUrl = uploadBlackImage(formId, token);
-                log("[+] 图片上传成功: " + imageUrl.substring(0, Math.min(imageUrl.length(), 45)) + "...");
+                // 1. 获取并直传纯黑图（有容错保护）
+                log("[1/3] 上传纯黑图片至阿里云 OSS...");
+                String imageUrl = null;
+                try {
+                    imageUrl = uploadBlackImage(formId, token);
+                    log("[+] OSS 纯黑图上传成功");
+                } catch (Exception e) {
+                    log("[!] 自动上传异常(" + e.getMessage() + ")，启用备用图片链路...");
+                    imageUrl = FALLBACK_IMAGE_URL;
+                }
 
-                // 2. 检查是否有历史记录 FID
-                log("[2/3] 查询会话状态与历史记录...");
+                // 2. 检查会话状态与历史记录
+                log("[2/3] 查询会���历史与打卡槽位...");
                 String lastFid = fetchLastFid(formId, token);
 
                 // 3. 构造 GeoJSON 与 Catalogs 报文
-                log("[3/3] 组装 GeoJSON 范围坐标 (偏差 0 米)，提交打卡...");
+                log("[3/3] 组装范围坐标 (偏差 0 米)，提交打卡...");
                 JSONObject submitRes = submitForm(formId, token, name, imageUrl, lastFid);
 
                 int code = submitRes.optInt("code", -1);
                 if (code == 0) {
                     JSONObject data = submitRes.optJSONObject("data");
                     String fid = data != null ? data.optString("fid", lastFid) : lastFid;
-                    log("🎉 打卡成功！HTTP 200 / code: 0");
-                    log("记录 ID: " + fid);
+                    log("🎉 打卡入库成功！HTTP 200 / code: 0");
+                    log("记录 FID: " + fid);
 
                     mainHandler.post(() -> {
                         cardResult.setVisibility(View.VISIBLE);
                         tvResultTitle.setText("✅ 打卡成功 (入库完成)");
                         tvResultSeq.setText("提交成功！");
                         tvResultFid.setText("FID: " + fid);
-                        Toast.makeText(MainActivity.this, "打卡成功！", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "🎉 打卡成功！", Toast.LENGTH_SHORT).show();
                     });
                 } else {
                     String msg = submitRes.optString("message", "未知错误");
-                    log("❌ 提交失败: " + msg);
-                    mainHandler.post(() -> Toast.makeText(MainActivity.this, "失败: " + msg, Toast.LENGTH_LONG).show());
+                    log("❌ 提交被拒: " + msg);
+                    if (code == 401 || msg.contains("401") || msg.contains("登录") || msg.contains("token")) {
+                        log("⚠️ 提示: 当前 Token 已过期，请在微信重新打开一次小程序获取新 Token！");
+                    }
+                    mainHandler.post(() -> Toast.makeText(MainActivity.this, "打卡失败: " + msg, Toast.LENGTH_LONG).show());
                 }
 
             } catch (Exception e) {
-                log("❌ 异常: " + e.getMessage());
-                mainHandler.post(() -> Toast.makeText(MainActivity.this, "异常: " + e.getMessage(), Toast.LENGTH_LONG).show());
+                String errMsg = e.getMessage() != null ? e.getMessage() : e.toString();
+                log("❌ 流程异常: " + errMsg);
+                mainHandler.post(() -> Toast.makeText(MainActivity.this, errMsg, Toast.LENGTH_LONG).show());
             } finally {
                 mainHandler.post(() -> {
                     btnClockIn.setEnabled(true);
@@ -138,7 +181,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String uploadBlackImage(String formId, String token) throws Exception {
-        // 请求预上传
         URL url = new URL(BASE_URL + "/v2/image/pre_upload?fileNum=1");
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setRequestMethod("GET");
@@ -148,8 +190,19 @@ public class MainActivity extends AppCompatActivity {
         conn.setRequestProperty("ver", "3.70.2");
         conn.setConnectTimeout(8000);
 
+        int code = conn.getResponseCode();
         String jsonStr = readResponse(conn);
+
+        if (code == 401) {
+            throw new RuntimeException("登录凭据 (Token) 已过期失效，请填入最新 Token！");
+        }
+
         JSONObject root = new JSONObject(jsonStr);
+        if (!root.has("data") || root.isNull("data")) {
+            String msg = root.optString("message", "预上传接口未返回 data");
+            throw new RuntimeException("图片接口提示: " + msg);
+        }
+
         JSONObject data = root.getJSONObject("data");
         JSONObject ali = data.getJSONObject("aliSign");
 
@@ -166,6 +219,7 @@ public class MainActivity extends AppCompatActivity {
         upConn.setRequestMethod("POST");
         upConn.setDoOutput(true);
         upConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        upConn.setConnectTimeout(10000);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         writeField(baos, boundary, "key", ossKey);
@@ -219,7 +273,6 @@ public class MainActivity extends AppCompatActivity {
         String method = isPut ? "PUT" : "POST";
         String path = isPut ? "/v2/" + formId + "/form_data" : "/v1/" + formId + "/form_data";
 
-        // 构造题项 Catalogs
         JSONArray catalogs = new JSONArray();
 
         // 1. 姓名
@@ -273,7 +326,6 @@ public class MainActivity extends AppCompatActivity {
         q3.put("fileAuditList", new JSONArray());
         catalogs.put(q3);
 
-        // 顶层 JSON
         JSONObject payload = new JSONObject();
         payload.put("fid", lastFid);
         payload.put("subscribe", new JSONObject());
@@ -313,7 +365,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String readResponse(HttpURLConnection conn) throws Exception {
-        InputStream is = conn.getResponseCode() >= 400 ? conn.getErrorStream() : conn.getInputStream();
+        int respCode = conn.getResponseCode();
+        InputStream is = respCode >= 400 ? conn.getErrorStream() : conn.getInputStream();
+        if (is == null) {
+            return "{\"code\":" + respCode + ",\"message\":\"HTTP " + respCode + "\"}";
+        }
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         byte[] buf = new byte[1024];
         int len;

@@ -84,7 +84,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="打卡姓名"
+                android:text="打卡姓���"
                 android:textColor="@color/text_muted"
                 android:textSize="12sp" />
 
@@ -117,12 +117,31 @@
                 android:textSize="14sp"
                 android:layout_marginBottom="10dp" />
 
-            <TextView
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="登录凭据 (Authorization Token)"
-                android:textColor="@color/text_muted"
-                android:textSize="12sp" />
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:layout_marginBottom="4dp">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="登录凭据 (Authorization Token)"
+                    android:textColor="@color/text_muted"
+                    android:textSize="12sp" />
+
+                <Button
+                    android:id="@+id/btnPasteToken"
+                    android:layout_width="wrap_content"
+                    android:layout_height="32dp"
+                    android:text="📋 粘贴"
+                    android:textSize="11sp"
+                    android:paddingHorizontal="10dp"
+                    android:backgroundTint="@color/border"
+                    android:textColor="@color/primary" />
+            </LinearLayout>
 
             <EditText
                 android:id="@+id/etToken"
@@ -130,7 +149,6 @@
                 android:layout_height="wrap_content"
                 android:background="@color/input_bg"
                 android:textColor="@color/text_white"
-                android:text="kRLkYZxljx0o2Yb1wCFdfZBJopGadDGV_ojfIlRTHqBboW0PUdH-Vas3W7ekGnLEvHGx1A"
                 android:padding="10dp"
                 android:textSize="12sp"
                 android:inputType="textPassword"
