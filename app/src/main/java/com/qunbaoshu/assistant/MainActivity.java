@@ -149,7 +149,7 @@ public class MainActivity extends AppCompatActivity {
                 int code = submitRes.optInt("code", -1);
                 if (code == 0) {
                     JSONObject data = submitRes.optJSONObject("data");
-                    String fid = data != null ? data.optString("fid", lastFid) : lastFid;
+                    String fid = data != null ? data.optString("fid", "") : "";
                     log("🎉 打卡入库成功！HTTP 200 / code: 0");
                     log("记录 FID: " + fid);
 
