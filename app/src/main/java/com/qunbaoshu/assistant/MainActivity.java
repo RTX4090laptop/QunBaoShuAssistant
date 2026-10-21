@@ -141,13 +141,10 @@ public class MainActivity extends AppCompatActivity {
                     imageUrl = FALLBACK_IMAGE_URL;
                 }
 
-                // 3. 检查会话状态与历史记录 FID
-                log("[3/4] 查询会话历史与打卡槽位...");
-                String lastFid = fetchLastFid(formId, token);
-
-                // 4. 构造 GeoJSON 与 Catalogs 报文
-                log("[4/4] 组装范围坐标 (偏差 0 米)，提交打卡...");
-                JSONObject submitRes = submitForm(formId, token, name, imageUrl, lastFid, latestVersion);
+                // 3. 构造 GeoJSON 与 Catalogs 报文
+                // 默认一律走 POST 新建独立签到记录，不传历史 fid，防止覆盖同一天的早晨记录
+                log("[3/3] 组装范围坐标 (偏差 0 米)，提交独立时段打卡...");
+                JSONObject submitRes = submitForm(formId, token, name, imageUrl, "", latestVersion);
 
                 int code = submitRes.optInt("code", -1);
                 if (code == 0) {
@@ -296,8 +293,8 @@ public class MainActivity extends AppCompatActivity {
         return "";
     }
 
-    private JSONObject submitForm(String formId, String token, String name, String imageUrl, String lastFid, int formVersion) throws Exception {
-        boolean isPut = lastFid != null && !lastFid.isEmpty();
+    private JSONObject submitForm(String formId, String token, String name, String imageUrl, String targetFid, int formVersion) throws Exception {
+        boolean isPut = targetFid != null && !targetFid.isEmpty();
         String method = isPut ? "PUT" : "POST";
         String path = isPut ? "/v2/" + formId + "/form_data" : "/v1/" + formId + "/form_data";
 
@@ -355,7 +352,7 @@ public class MainActivity extends AppCompatActivity {
         catalogs.put(q3);
 
         JSONObject payload = new JSONObject();
-        payload.put("fid", lastFid);
+        payload.put("fid", targetFid != null ? targetFid : "");
         payload.put("subscribe", new JSONObject());
         payload.put("catalogs", catalogs);
         JSONArray showQ = new JSONArray();
