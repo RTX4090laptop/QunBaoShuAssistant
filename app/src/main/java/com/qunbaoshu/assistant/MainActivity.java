@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String DETAIL_ADDR = "广东省汕头市金平区大学路243号";
 
     // 最新有效的默认凭据
-    private static final String LATEST_VALID_TOKEN = "n9-pjSahdXkuiK3nXqUbNB_4MiCQlEwTLIGkGLbkFE9PIRAbCHtTRDVccV-QNVNaFcZ0Og";
+    private static final String LATEST_VALID_TOKEN = "35LBB2ZF-GjOalnmARIhgvZf1ZXTJ2lHzscjPxjWN00niEUTLepcil2o2KKPqrArXsMwAQ";
 
     // 兜底图片 URL (群报数已有的公开打卡图)
     private static final String FALLBACK_IMAGE_URL = "https://oss2.qun100.com/F2p65x29/V2/formData2/qk9K2UCBZGVe37f1d39.jpg";
